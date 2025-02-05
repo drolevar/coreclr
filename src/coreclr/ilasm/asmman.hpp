@@ -233,23 +233,25 @@ public:
     BOOL    m_fMResNew[MAX_MANIFEST_RESOURCES];
 	DWORD	m_dwMResNum;
 	DWORD	m_dwMResSizeTotal;
-	AsmMan() { m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; m_pAsmEmitter = NULL;
-				memset(m_wzMResName,0,sizeof(m_wzMResName));
-				memset(m_dwMResSize,0,sizeof(m_dwMResSize));
-				m_dwMResNum = m_dwMResSizeTotal = 0; };
-	AsmMan(void* pAsm) { m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; m_pAssembler = pAsm;  m_pAsmEmitter = NULL;
-				memset(m_wzMResName,0,sizeof(m_wzMResName));
-				memset(m_dwMResSize,0,sizeof(m_dwMResSize));
-				m_dwMResNum = m_dwMResSizeTotal = 0; };
-	AsmMan(ErrorReporter* rpt) { m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; report = rpt;  m_pAsmEmitter = NULL;
-				memset(m_wzMResName,0,sizeof(m_wzMResName));
-				memset(m_dwMResSize,0,sizeof(m_dwMResSize));
-				m_dwMResNum = m_dwMResSizeTotal = 0; };
+    AsmMan(void* pAsm)
+    {
+        m_pAssembly = NULL; m_szScopeName = NULL; m_pGUID = NULL; m_pAssembler = pAsm;  m_pAsmEmitter = NULL;
+        memset(m_wzMResName,0,sizeof(m_wzMResName));
+        memset(m_dwMResSize,0,sizeof(m_dwMResSize));
+        m_dwMResNum = m_dwMResSizeTotal = 0;
+
+        holdAsmMscorlib = FALSE;
+        m_szAsmMscorlib = new char[9];
+        strcpy_s(m_szAsmMscorlib, 9, "mscorlib");
+     };
 	~AsmMan()
 	{
 		if(m_pAssembly) delete m_pAssembly;
 		if(m_szScopeName) delete[] m_szScopeName;
 		if(m_pGUID) delete m_pGUID;
+
+        // m_szAsmMscorlib can be held by an AsmManAssembly via szName
+        if(m_szAsmMscorlib && !holdAsmMscorlib) delete[] m_szAsmMscorlib;
 	};
 	void	SetErrorReporter(ErrorReporter* rpt) { report = rpt; };
 	HRESULT EmitManifest(void);
@@ -307,6 +309,7 @@ public:
         return 0;
     };
 
+    void InitRebAssemblies() { if(!holdAsmMscorlib) DefineAsmMscorlib(); }
     void AddAssemblyTypeRefLink(_In_ __nullterminated LPSTR szName, _In_ __nullterminated LPSTR szResolutionScope, BOOL fAny, BOOL fDeny);
     AsmManTypeRefLink* FindTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, std::function<BOOL(AsmManTypeRefLink*)> cb, UINT32* pStartIdx = NULL);
     LPCSTR HasTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
@@ -317,12 +320,28 @@ public:
         { return AddTypeRefLink(/*utilize*/FALSE, szName, szResolutionScope, fAny, fDeny); };
 
     BOOL AddTypeRefLinkToMscorlib(LPCSTR szName, BOOL fAny = FALSE, BOOL fDeny = FALSE)
-        { return AddTypeRefLink(szName, "mscorlib", fAny, fDeny); };
+        { return AddTypeRefLink(szName, m_szAsmMscorlib, fAny, fDeny); };
 
 private:
+    char* m_szAsmMscorlib;
+    BOOL holdAsmMscorlib;
+
     BOOL AddTypeRefLink(BOOL utilize, LPCSTR szName, LPCSTR szResolutionScope, BOOL fAny, BOOL fDeny);
     BOOL AddTypeRefLinkYacc(LPCSTR szName, LPCSTR szResolutionScope, BOOL fAny, BOOL fDeny)
         { return AddTypeRefLink(/*utilize*/TRUE, szName, szResolutionScope, fAny, fDeny); };
+
+    void DefineAsmMscorlib()
+    {
+        StartAssembly(m_szAsmMscorlib, /*szAlias*/ NULL, /*dwAttr*/ 0, /*isRef*/ TRUE);
+
+        m_pCurAsmRef->pPublicKeyToken = new BinStr();
+        m_pCurAsmRef->pPublicKeyToken->appendInt32(0x565C7AB7);
+        m_pCurAsmRef->pPublicKeyToken->appendInt32(0x89E03419);
+        m_pCurAsmRef->usVerMajor = 4;
+
+        EndAssembly();
+        holdAsmMscorlib = TRUE;
+    };
 
 };
 

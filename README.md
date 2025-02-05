@@ -104,7 +104,7 @@ ilasm ... /CVR=cvtres.exe
 
 #### Automatic search for resource converter
 
-Automatic search is available starting from 9.3.0+ by using [hMSBuild](https://github.com/3F/hMSBuild) to resolve *.res* / *.obj* processing automatically.
+Automatic search is available starting from 9.3.0+ by using [hMSBuild](https://github.com/3F/hMSBuild) and other predefined falbacks to resolve *.res* / *.obj* processing automatically.
 
 ## NuGet Package Preferences
 

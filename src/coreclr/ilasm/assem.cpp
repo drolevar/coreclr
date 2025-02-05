@@ -140,7 +140,7 @@ Assembler::Assembler()
 
     m_pbsMD = NULL;
 
-    m_sysObjRebase = false;
+    m_sysObjRebase = FALSE;
 
     m_pOutputBuffer = new BYTE[OUTPUT_BUFFER_SIZE];
 

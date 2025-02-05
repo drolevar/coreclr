@@ -245,8 +245,8 @@ void    AsmMan::EmitFiles()
 
 void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef)
 {
-    if(!isRef && (0==strcmp(szName, "mscorlib"))) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
-    if(!isRef && (m_pAssembly != NULL))
+    if(!isRef && !strcmp(szName, m_szAsmMscorlib)) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
+    if(!isRef && m_pAssembly != NULL)
     {
         if(strcmp(szName, m_pAssembly->szName))
             report->error("Multiple assembly declarations\n");
@@ -255,6 +255,24 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     }
     else
     {
+        if(m_AsmRefLst.COUNT() > 0 && !strcmp(szName, m_szAsmMscorlib)) // to support legacy behavior
+        {
+            // update ref when m_szAsmMscorlib was defined manually at first .assembly and +rebase
+            if(m_AsmRefLst.COUNT() == 1 && !strcmp(m_szAsmMscorlib, m_AsmRefLst.PEEK(0)->szName))
+            {
+                AsmManAssembly* assm = m_AsmRefLst.POP();
+                assm->szAlias = assm->szName = NULL;
+                delete assm;
+                holdAsmMscorlib = FALSE;
+            }
+            else
+            {
+                report->warn("Unexpected '%s' .assembly declaration when rebasing is activated. Delete or update as first entry.\n", m_szAsmMscorlib);
+                m_pCurAsmRef = NULL;
+                return;
+            }
+        }
+
         if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
         {
             m_pCurAsmRef->usVerMajor = (USHORT)0xFFFF;
@@ -277,9 +295,12 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     ((Assembler*)m_pAssembler)->m_CustomDescrListStack.PUSH(((Assembler*)m_pAssembler)->m_pCustomDescrList);
     ((Assembler*)m_pAssembler)->m_pCustomDescrList = m_pCurAsmRef ? &(m_pCurAsmRef->m_CustomDescrList) : NULL;
 
-    AddTypeRefLinkToMscorlib("System");
-    AddTypeRefLinkToMscorlib("System.", /*fAny*/ TRUE);
-    AddTypeRefLink("System.Span`", /*szResolutionScope*/ NULL, /*fAny*/ TRUE, /*fDeny*/ TRUE);
+    if(((Assembler*)m_pAssembler)->m_sysObjRebase)
+    {
+        AddTypeRefLinkToMscorlib("System");
+        AddTypeRefLinkToMscorlib("System.", /*fAny*/ TRUE);
+        AddTypeRefLink("System.Span`", /*szResolutionScope*/ NULL, /*fAny*/ TRUE, /*fDeny*/ TRUE);
+    }
 }
 // copied from asmparse.y
 static void corEmitInt(BinStr* buff, unsigned data)

@@ -424,7 +424,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "REB"))
                     {
-                        pAsm->m_sysObjRebase = true;
+                        pAsm->EnableRebasing();
                     }
                     else if (!_stricmp(szOpt, "OUT"))
                     {

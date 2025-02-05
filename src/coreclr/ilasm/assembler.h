@@ -807,7 +807,7 @@ public:
 
     BinStr* m_pbsMD;
 
-    bool m_sysObjRebase;
+    BOOL m_sysObjRebase;
 
     Instr   m_Instr[INSTR_POOL_SIZE]; // 16
     inline  Instr* GetInstr()
@@ -872,6 +872,7 @@ public:
     void ResetForNextMethod();
     void ResetLineNumbers();
     void SetStdMapping(BOOL val = TRUE) { m_fStdMapping = val; };
+    void EnableRebasing() { m_sysObjRebase = TRUE; if(m_pManifest) m_pManifest->InitRebAssemblies(); };
 
     //--------------------------------------------------------------------------------
     BOOL isShort(unsigned instr) { return ((OpcodeInfo[instr].Type & 16) != 0); };
