@@ -141,11 +141,16 @@ mdToken Assembler::ResolveClassRef(mdToken tkResScope, _In_ __nullterminated con
             TypeRefFilterResult typeRef = m_pManifest->FilterUsingTypeRefLink(pszFullClassName, rLink);
 
             AsmManAssembly* rt = m_pManifest->m_AsmRefLst.PEEK(1);
-            if(rt && rt->tkTok == tkResScope && typeRef != TypeRefFilterResult::Deny)
+
+            if(typeRef == TypeRefFilterResult::Self)
+            {
+                tkResScope = 0;
+            }
+            else if(rt && rt->tkTok == tkResScope && typeRef != TypeRefFilterResult::Deny)
             {
                 tkResScope = m_pManifest->m_AsmRefLst.PEEK(0)->tkTok;
             }
-            else if(typeRef == TypeRefFilterResult::Link && rLink.GetCount() > 0)
+            else if(typeRef == TypeRefFilterResult::Link)
             {
                 tkResScope = m_pManifest->GetAsmRefTokByName(rLink.GetUTF8());
             }

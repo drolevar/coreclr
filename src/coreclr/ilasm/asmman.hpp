@@ -193,7 +193,9 @@ struct AsmManStrongName
 
 enum class TypeRefFilterResult
 {
-    None, Link, Deny
+    None, Link, Deny,
+    // zero index on the first entry from the module table
+    Self
 };
 
 class ErrorReporter;
@@ -312,9 +314,9 @@ public:
     void InitRebAssemblies() { if(!holdAsmMscorlib) DefineAsmMscorlib(); }
     void AddAssemblyTypeRefLink(_In_ __nullterminated LPSTR szName, _In_ __nullterminated LPSTR szResolutionScope, BOOL fAny, BOOL fDeny);
     AsmManTypeRefLink* FindTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, std::function<BOOL(AsmManTypeRefLink*)> cb, UINT32* pStartIdx = NULL);
-    LPCSTR HasTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
+    LPCSTR GetTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
     TypeRefFilterResult FilterUsingTypeRefLink(_In_ __nullterminated LPCSTR pszFullClassName, _Out_ SString& pLink);
-    BOOL IsDenied(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
+    AsmManTypeRefLink* GetTypeRefDeniedRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
 
     BOOL AddTypeRefLink(LPCSTR szName, LPCSTR szResolutionScope = NULL, BOOL fAny = FALSE, BOOL fDeny = FALSE)
         { return AddTypeRefLink(/*utilize*/FALSE, szName, szResolutionScope, fAny, fDeny); };

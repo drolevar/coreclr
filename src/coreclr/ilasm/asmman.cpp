@@ -905,7 +905,7 @@ AsmManTypeRefLink* AsmMan::FindTypeRefLinkRecord
     return NULL;
 }
 
-LPCSTR AsmMan::HasTypeRefLinkRecord
+LPCSTR AsmMan::GetTypeRefLinkRecord
 (
     _In_ __nullterminated LPCSTR pszFullClassName,
     UINT32* pStartIdx
@@ -932,35 +932,33 @@ TypeRefFilterResult AsmMan::FilterUsingTypeRefLink
     bool ignoreLink = false;
     for(UINT32 i = 0, max = m_pAssembly->m_TypeRefLinkList.COUNT(); i < max; ++i)
     {
-        if(fRet != TypeRefFilterResult::Link && !ignoreLink)
+        UINT32 current = i;
+        LPCSTR rc = GetTypeRefLinkRecord(pszFullClassName, &i);
+
+        if(rc != NULL && strlen(rc) == 0) fRet = TypeRefFilterResult::Self;
+        else if(rc != NULL) { refRecord.SetUTF8(rc); fRet = TypeRefFilterResult::Link; }
+        else
         {
-            refRecord.SetUTF8(HasTypeRefLinkRecord(pszFullClassName, &i));
-            if(refRecord.GetCount() > 0) fRet = TypeRefFilterResult::Link;
-            else { i = -1; ignoreLink = true; }
-        }
-        else if(fRet != TypeRefFilterResult::Deny)
-        {
-            if(IsDenied(pszFullClassName, &i)) fRet = TypeRefFilterResult::Deny;
+            i = current;
+            AsmManTypeRefLink* denied = GetTypeRefDeniedRecord(pszFullClassName, &i);
+            if(denied) { fRet = TypeRefFilterResult::Deny; if(denied->m_fAny) break; }
             else break;
-            if(ignoreLink) break;
         }
     }
     return fRet;
 }
 
-BOOL AsmMan::IsDenied
+AsmManTypeRefLink* AsmMan::GetTypeRefDeniedRecord
 (
     _In_ __nullterminated LPCSTR pszFullClassName,
     UINT32* pStartIdx
 )
 {
-    if(FindTypeRefLinkRecord(pszFullClassName, [](AsmManTypeRefLink* l) -> BOOL
+    return FindTypeRefLinkRecord(pszFullClassName, [](AsmManTypeRefLink* l) -> BOOL
     {
         return l->m_fDeny;
     },
-    pStartIdx)) return TRUE;
-
-    return FALSE;
+    pStartIdx);
 }
 
 HRESULT AsmMan::EmitManifest()
