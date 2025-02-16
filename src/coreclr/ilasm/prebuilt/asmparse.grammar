@@ -1197,6 +1197,8 @@ assemblyDecl            : '.hash' 'algorithm' int32
                         | '.typeref' dottedName 'any' 'at' dottedName 
                         | '.typeref' dottedName 'constraint' 'deny' 
                         | '.typeref' dottedName 'constraint' 'any' 'deny' 
+                        | '.typeref' dottedName 'assert' 
+                        | '.typeref' dottedName 'any' 'assert' 
                         ;
 
 intOrWildcard           : int32 

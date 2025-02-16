@@ -1971,6 +1971,8 @@ assemblyDecl            : _HASH ALGORITHM_ int32              { PASMM->SetAssemb
                         | _TYPEREF dottedName ANY_ AT_ dottedName     { PASMM->AddAssemblyTypeRefLink($2, $5, /*ANY_*/TRUE, /*DENY_*/FALSE); }
                         | _TYPEREF dottedName CONSTRAINT_ DENY_       { PASMM->AddAssemblyTypeRefLink($2, NULL, /*ANY_*/FALSE, /*DENY_*/TRUE); }
                         | _TYPEREF dottedName CONSTRAINT_ ANY_ DENY_  { PASMM->AddAssemblyTypeRefLink($2, NULL, /*ANY_*/TRUE, /*DENY_*/TRUE); }
+                        | _TYPEREF dottedName ASSERT_                 { PASMM->AddAssemblyTypeRefLink($2, NULL, /*ANY_*/FALSE, /*DENY_*/FALSE); }
+                        | _TYPEREF dottedName ANY_ ASSERT_            { PASMM->AddAssemblyTypeRefLink($2, NULL, /*ANY_*/TRUE, /*DENY_*/FALSE); }
                         ;
 
 intOrWildcard           : int32                               { $$ = $1; }

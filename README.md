@@ -42,6 +42,8 @@ assemblyDecl : '.hash' 'algorithm' int32
             | '.typeref' dottedName 'any' 'at' dottedName 
             | '.typeref' dottedName 'constraint' 'deny' 
             | '.typeref' dottedName 'constraint' 'any' 'deny' 
+            | '.typeref' dottedName 'assert' 
+            | '.typeref' dottedName 'any' 'assert' 
             ;
 ```
 
@@ -50,7 +52,15 @@ The format for changing the link:
 ```csharp
 .typeref 'Type' [any] at 'ResolutionScope'
 ```
-The format for rejecting defined records (predefined by the user and the assembler):
+
+Assertion of type declaration by current module (first at *Module* tables):
+
+```csharp
+.typeref 'Type' [any] assert
+//alias: .typeref 'Type' [any] at ''
+```
+
+The format for rejecting defined records (predefined by the user and the .assembler declaration):
 
 ```csharp
 .typeref 'Type' constraint [any] deny
@@ -66,7 +76,10 @@ For example, predefined assembler's `.typeref` directives (when */REB* is activa
 {
     .typeref 'System.' any at 'mscorlib'
     .typeref 'System' at 'mscorlib'
-    .typeref 'System.Span`' constraint any deny
+    .typeref 'System.Span`' any assert
+    .typeref 'System.ReadOnlySpan`' any assert
+    .typeref 'System.Memory`' any assert
+    .typeref 'System.ReadOnlyMemory`' any assert
     
     .custom instance void ...
     .custom instance void ...
@@ -82,12 +95,13 @@ Multiple definitions are competitive or interchangeable. Priority is given to th
 .typeref 'System.Math' constraint deny
 .typeref 'System.IO.' constraint any deny
 .typeref 'System.' any at 'mscorlib'
+.typeref 'System.' any assert
 ```
 
 are equal to
 
 ```csharp
-.typeref 'System.' any at 'mscorlib'
+.typeref 'System.' any assert
 ```
 
 etc.

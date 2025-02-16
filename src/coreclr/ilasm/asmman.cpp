@@ -299,7 +299,10 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     {
         AddTypeRefLinkToMscorlib("System");
         AddTypeRefLinkToMscorlib("System.", /*fAny*/ TRUE);
-        AddTypeRefLink("System.Span`", /*szResolutionScope*/ NULL, /*fAny*/ TRUE, /*fDeny*/ TRUE);
+        AddTypeRefLink("System.Span`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
+        AddTypeRefLink("System.ReadOnlySpan`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
+        AddTypeRefLink("System.Memory`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
+        AddTypeRefLink("System.ReadOnlyMemory`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
     }
 }
 // copied from asmparse.y
@@ -856,6 +859,7 @@ void AsmMan::AddAssemblyTypeRefLink
     BOOL fDeny
 )
 {
+    if(!fDeny && !szResolutionScope) szResolutionScope = new char[1]{}; // (... at '') <- (... assert)
     AddTypeRefLinkYacc(szName, szResolutionScope, fAny, fDeny);
 }
 
