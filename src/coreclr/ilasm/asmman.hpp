@@ -242,7 +242,7 @@ public:
         memset(m_dwMResSize,0,sizeof(m_dwMResSize));
         m_dwMResNum = m_dwMResSizeTotal = 0;
 
-        holdAsmMscorlib = FALSE;
+        m_fInitAsmMscorlib = FALSE;
         m_szAsmMscorlib = new char[9];
         strcpy_s(m_szAsmMscorlib, 9, "mscorlib");
      };
@@ -253,7 +253,7 @@ public:
 		if(m_pGUID) delete m_pGUID;
 
         // m_szAsmMscorlib can be held by an AsmManAssembly via szName
-        if(m_szAsmMscorlib && !holdAsmMscorlib) delete[] m_szAsmMscorlib;
+        if(m_szAsmMscorlib && !m_fInitAsmMscorlib) delete[] m_szAsmMscorlib;
 	};
 	void	SetErrorReporter(ErrorReporter* rpt) { report = rpt; };
 	HRESULT EmitManifest(void);
@@ -311,7 +311,7 @@ public:
         return 0;
     };
 
-    void InitRebAssemblies() { if(!holdAsmMscorlib) DefineAsmMscorlib(); }
+    void InitRebAssemblies() { if(!m_fInitAsmMscorlib) DefineAsmMscorlib(); }
     void AddAssemblyTypeRefLink(_In_ __nullterminated LPSTR szName, _In_ __nullterminated LPSTR szResolutionScope, BOOL fAny, BOOL fDeny);
     AsmManTypeRefLink* FindTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, std::function<BOOL(AsmManTypeRefLink*)> cb, UINT32* pStartIdx = NULL);
     LPCSTR GetTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
@@ -326,7 +326,7 @@ public:
 
 private:
     char* m_szAsmMscorlib;
-    BOOL holdAsmMscorlib;
+    BOOL m_fInitAsmMscorlib;
 
     BOOL AddTypeRefLink(BOOL utilize, LPCSTR szName, LPCSTR szResolutionScope, BOOL fAny, BOOL fDeny);
     BOOL AddTypeRefLinkYacc(LPCSTR szName, LPCSTR szResolutionScope, BOOL fAny, BOOL fDeny)
@@ -342,7 +342,19 @@ private:
         m_pCurAsmRef->usVerMajor = 4;
 
         EndAssembly();
-        holdAsmMscorlib = TRUE;
+        m_fInitAsmMscorlib = TRUE;
+    };
+
+    AsmManAssembly* GetAsmMscorlib()
+    {
+        if(m_fInitAsmMscorlib) return m_AsmRefLst.PEEK(0);
+
+        AsmManAssembly* asmRef = NULL;
+        for(ULONG i = 0; (asmRef=m_AsmRefLst.PEEK(i)); ++i)
+        {
+            if(!strcmp(asmRef->szName, m_szAsmMscorlib)) break;
+        }
+        return asmRef;
     };
 
 };

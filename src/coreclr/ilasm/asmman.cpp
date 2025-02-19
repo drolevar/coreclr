@@ -255,22 +255,11 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     }
     else
     {
-        if(m_AsmRefLst.COUNT() > 0 && !strcmp(szName, m_szAsmMscorlib)) // to support legacy behavior
+        // reuse predefined such as from legacy DllExport versions, etc.
+        if(m_fInitAsmMscorlib && !strcmp(szName, m_szAsmMscorlib))
         {
-            // update ref when m_szAsmMscorlib was defined manually at first .assembly and +rebase
-            if(m_AsmRefLst.COUNT() == 1 && !strcmp(m_szAsmMscorlib, m_AsmRefLst.PEEK(0)->szName))
-            {
-                AsmManAssembly* assm = m_AsmRefLst.POP();
-                assm->szAlias = assm->szName = NULL;
-                delete assm;
-                holdAsmMscorlib = FALSE;
-            }
-            else
-            {
-                report->warn("Unexpected '%s' .assembly declaration when rebasing is activated. Delete or update as first entry.\n", m_szAsmMscorlib);
-                m_pCurAsmRef = NULL;
-                return;
-            }
+            m_pCurAsmRef = GetAsmMscorlib();
+            return;
         }
 
         if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
@@ -394,7 +383,12 @@ void    AsmMan::EndAssembly()
     if(m_pCurAsmRef)
     {
         if(m_pCurAsmRef->isRef)
-        { // list the assembly ref
+        {
+            if(m_fInitAsmMscorlib && !strcmp(m_pCurAsmRef->szName, m_szAsmMscorlib))
+            {
+                return;
+            }
+
             if(GetAsmRefByName(m_pCurAsmRef->szAlias))
             {
                 //report->warn("Multiple declarations of Assembly Ref '%s', ignored except the 1st one\n",m_pCurAsmRef->szName);
