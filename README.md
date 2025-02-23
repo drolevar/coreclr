@@ -80,6 +80,7 @@ For example, predefined assembler's `.typeref` directives (when */REB* is activa
     .typeref 'System.ReadOnlySpan`' any assert
     .typeref 'System.Memory`' any assert
     .typeref 'System.ReadOnlyMemory`' any assert
+    .typeref 'System.MemoryExtensions' assert
     
     .custom instance void ...
     .custom instance void ...
@@ -124,6 +125,7 @@ Automatic search is available starting from 9.3.0+ by using [hMSBuild](https://g
 
 * `$(ILAsm_RootPkg)` - path to ILAsm package folder.
 * `$(ILAsm_PathToBin)` - path to `\bin` folder., e.g. *$(ILAsm_PathToBin)Win.x64\ilasm.exe*
+* `$(ILAsm_W64Bin)` and `$(ILAsm_W86Bin)` - e.g. *$(ILAsm_W64Bin)ildasm.exe*
 
-**PDB** files are available through GitHub Releases:
+Symbols (**PDB**) are available through GitHub Releases:
 https://github.com/3F/coreclr/releases

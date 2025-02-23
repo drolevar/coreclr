@@ -292,6 +292,7 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
         AddTypeRefLink("System.ReadOnlySpan`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
         AddTypeRefLink("System.Memory`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
         AddTypeRefLink("System.ReadOnlyMemory`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
+        AddTypeRefLink("System.MemoryExtensions", /*szResolutionScope*/ "");
     }
 }
 // copied from asmparse.y

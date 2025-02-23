@@ -8,6 +8,8 @@
   <PropertyGroup>
     <ILAsm_RootPkg>$(MSBuildThisFileDirectory)..\..\</ILAsm_RootPkg> <!-- [root]\build\net\ILAsm.targets -->
     <ILAsm_PathToBin>$(ILAsm_RootPkg)bin\</ILAsm_PathToBin>
+    <ILAsm_W64Bin>$(ILAsm_PathToBin)Win.x64\</ILAsm_W64Bin>
+    <ILAsm_W86Bin>$(ILAsm_PathToBin)Win.x86\</ILAsm_W86Bin>
   </PropertyGroup>
 
 </Project>

@@ -10,32 +10,22 @@
     <projectUrl>https://github.com/3F/coreclr</projectUrl>
     <repository type="git" url="https://github.com/3F/coreclr" />
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>IL Assembler (ILAsm) + IL Disassembler (ILDasm) on coreclr (.NET Core CLR)
-    
-        Modified versions aka 3F's IL assembler on coreclr (github/3F)
-        Specialy for https://github.com/3F/DllExport
-
-        Target platforms: Win.x64 and Win.x86
+    <description>Open source 3F's IL Assembler (ILAsm) + IL Disassembler (ILDasm)
+        
         %VersionFull%
-        _ _ _ _ _ _
         
         https://github.com/3F/coreclr
         The MIT License (MIT)
-
-        ! To provide compatible converter of resources to obj COFF-format when assembling with ILAsm,
-        use /CVRES (/CVR) key.
-        ```
-        ~... /CVR=cvtres.exe
-        ```
-        Related issue: https://github.com/3F/coreclr/issues/2
+        Specially for https://github.com/3F/DllExport
         
-        PDB files are available through GitHub Releases:
+        .NET Core runtime and all symbols (PDB) are available through GitHub Releases:
         https://github.com/3F/coreclr/releases
 
         Preferences:
 
           * $(ILAsm_RootPkg) - path to root folder of this package after install.
-          * $(ILAsm_PathToBin) - path to `\bin` folder., eg.: $(ILAsm_PathToBin)Win.x64\ilasm.exe
+          * $(ILAsm_PathToBin) - path to `\bin` folder., e.g. $(ILAsm_PathToBin)Win.x64\ilasm.exe
+          * $(ILAsm_W64Bin) and $(ILAsm_W86Bin) - e.g. $(ILAsm_W64Bin)ildasm.exe
 
         ===
         gnt ILAsm/%Version%
