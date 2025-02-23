@@ -1,7 +1,54 @@
-coreclr \ ILAsm - https://github.com/3F/coreclr
-- - - - - - - - -
+3F's IL Assembler / coreclr - https://github.com/3F/coreclr
+- - - - - - - - - - - - - - - 
 
-[v4.700.2]
+[9.3.0] 2025.02.23
+
+    * NEW: Extended default types binding for the rebase option.
+    
+    * NEW: Implemented `.typeref` directive for custom definitions;
+            grammar:
+            ```
+            assemblyDecl : '.hash' 'algorithm' int32 
+                        | secDecl
+                        | asmOrRefDecl
+                        | '.typeref' dottedName 'at' dottedName 
+                        | '.typeref' dottedName 'any' 'at' dottedName 
+                        | '.typeref' dottedName 'constraint' 'deny' 
+                        | '.typeref' dottedName 'constraint' 'any' 'deny' 
+                        | '.typeref' dottedName 'assert' 
+                        | '.typeref' dottedName 'any' 'assert' 
+                        ;
+            ```
+    
+    * NEW: Implemented automatic search for resource converter
+           by using https://github.com/3F/hMSBuild and other predefined falbacks
+           to resolve .res / .obj processing automatically.
+    
+    * NEW: New properties for official nuget package `ILAsm`:
+            `$(ILAsm_W64Bin)` and `$(ILAsm_W86Bin)` - e.g. *$(ILAsm_W64Bin)ildasm.exe
+            https://www.nuget.org/packages/ILAsm
+    
+    * CHANGED: Initialize mscorlib if no relevant .assembly record;
+               And support legacy behavior for DllExport 1.7.x (or older).
+    
+    * CHANGED: Predefined .typeref definitions when rebasing is activated:
+            ```
+            .typeref 'System.' any at 'mscorlib'
+            .typeref 'System' at 'mscorlib'
+            .typeref 'System.Span`' any assert
+            .typeref 'System.ReadOnlySpan`' any assert
+            .typeref 'System.Memory`' any assert
+            .typeref 'System.ReadOnlyMemory`' any assert
+            .typeref 'System.MemoryExtensions' assert
+            ```
+    
+    * CHANGED: Includes other changes made to the original 9.0
+    
+    * NOTE: Symbols (PDB) are available through GitHub Releases:
+            https://github.com/3F/coreclr/releases
+    
+
+[4.700.2]
 
     * NEW: Implemented new `/REBASE` key feature for IL Assembler. Issue #7.
            It will try to rebase system object: `netstandard` } `System.Runtime` } `mscorlib`
@@ -14,7 +61,7 @@ coreclr \ ILAsm - https://github.com/3F/coreclr
     * CHANGED: Updated coreclr 3.1.0 RTM
 
 
-[v4.700.1]
+[4.700.1]
 
     * FIXED: ILDAsm. Fixed dasm.rc to correctly display list of available commands in console.
 
