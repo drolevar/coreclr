@@ -7,6 +7,8 @@ add_definitions(-D__ILDASM__)
 
 add_definitions(-DFEATURE_CORECLR)
 
+add_compile_options(/std:c++latest)
+
 include_directories(..)
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -31,6 +33,7 @@ set(ILDASM_SOURCES
     ../dres.cpp
     ../ildasmpch.cpp
     ../windasm.cpp
+    ../PortablePdb.cpp
 )
 
 set(ILDASM_HEADERS
@@ -41,6 +44,7 @@ set(ILDASM_HEADERS
     ../ildasmpch.h
     ../resource.h
     ../util.hpp
+    ../PortablePdb.h
 )
 
 if (CLR_CMAKE_TARGET_WIN32)

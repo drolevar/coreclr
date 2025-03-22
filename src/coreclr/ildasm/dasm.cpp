@@ -26,6 +26,9 @@
 #include <clrversion.h>
 #include <_version.h>
 
+#include <PortablePdb.h>
+#include <filesystem>
+
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
 #pragma warning(disable : 4640)
@@ -39,6 +42,8 @@ DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 
 #include "mdfileformat.h"
 
+#include <PortablePdb.h>
+using namespace io::github::_3F::coreclr;
 
 struct MIDescriptor
 {
@@ -48,8 +53,9 @@ struct MIDescriptor
     mdToken tkBodyParent;   // parent of the implementing method
 };
 
-ISymUnmanagedReader*        g_pSymReader = NULL;
-
+#ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
+ISymUnmanagedReader* g_pSymReader = NULL;
+#endif
 IMDInternalImport*      g_pImport = NULL;
 IMetaDataImport2*        g_pPubImport;
 extern IMetaDataAssemblyImport* g_pAssemblyImport;
@@ -139,6 +145,9 @@ unsigned                g_uCodePage = g_uConsoleCP;
 
 char*                   g_rchCA = NULL; // dyn.allocated array of CA dumped/not flags
 unsigned                g_uNCA = 0;     // num. of CAs
+
+std::vector<PortablePdb::DocumentTable> g_portablePdbDocuments{};
+std::vector<PortablePdb::MethodDebugInfoTable> g_portablePdbDebugInfo{};
 
 struct ResourceNode;
 extern DynamicArray<LocalComTypeDescr*> *g_pLocalComType;
@@ -343,12 +352,13 @@ void Cleanup()
         g_pDisp->Release();
         g_pDisp = NULL;
     }
-
+#ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
     if (g_pSymReader != NULL)
     {
         g_pSymReader->Release();
         g_pSymReader = NULL;
     }
+#endif
     if (g_pPELoader != NULL)
     {
         g_pPELoader->close();
@@ -7537,6 +7547,39 @@ BOOL DumpFile()
         printError(g_pFile, RstrUTF(IDS_E_OPENMD));
         goto exit;
     }
+
+#ifndef IMPL_SRCLINE_ORIGIN_SYMREADER
+
+    if(g_fInsertSourceLines)
+    {
+        try
+        {
+            std::filesystem::path _pathToModule(g_wszFullInputFile);
+            const wchar_t* file = _pathToModule.replace_extension(L".pdb").c_str();
+            ::printf("Extract data from PDB: %ls\n", file);
+            PortablePdb pdb(file);
+
+            pdb.readDocuments(g_portablePdbDocuments);
+            pdb.readMethodDebugInfo(g_portablePdbDebugInfo);
+        }
+        catch(const PortablePdbException& ex)
+        {
+            switch (ex.code)
+            {
+            case PortablePdbErrorCode::InvalidPdbFormat:
+                ::printf("[*] Only Portable PDB format is supported at the moment. Contact https://github.com/3F/coreclr\n");
+                break;
+            }
+            ::printf("PortablePdbException: %d\n", (int)ex.code);
+        }
+    }
+
+    if(g_fShowSource)
+    {
+        ::printf("[*] /SOURCE key is not yet supported in the current implementation. Contact https://github.com/3F/coreclr\n");
+    }
+
+#endif // #ifndef IMPL_SRCLINE_ORIGIN_SYMREADER
 
     if((g_uNCA = g_pImport->GetCountWithTokenKind(mdtCustomAttribute)))
     {

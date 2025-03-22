@@ -223,7 +223,7 @@ int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileNam
         }
         else if (_stricmp(szOpt, "sou") == 0)
         {
-            printf("Warning: 'SOURCE' option is ignored for ildasm on CoreCLR.\n");
+            g_fShowSource = TRUE;
         }
         else if (_stricmp(szOpt, "lin") == 0)
         {

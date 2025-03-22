@@ -20,7 +20,13 @@
 extern PELoader * g_pPELoader;
 #include <corsym.h>
 
-extern ISymUnmanagedReader*     g_pSymReader;
+#include <PortablePdb.h>
+using namespace io::github::_3F::coreclr;
+
+#ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
+extern ISymUnmanagedReader* g_pSymReader;
+#endif
+
 extern BOOL     g_fDumpAsmCode;
 extern char     g_szAsmCodeIndent[];
 extern BOOL     g_fShowBytes;
@@ -35,6 +41,9 @@ extern int                     g_iPtrCount;
 static BOOL ConvToLiteral(__inout __nullterminated char* retBuff, const WCHAR* str, int cbStr);
 extern DWORD                   g_Mode;
 extern unsigned g_uConsoleCP;
+
+extern std::vector<PortablePdb::DocumentTable> g_portablePdbDocuments;
+extern std::vector<PortablePdb::MethodDebugInfoTable> g_portablePdbDebugInfo;
 
 #define PADDING 28
 
@@ -51,6 +60,12 @@ FILE* pFile=NULL;
 BOOL    bIsNewFile = TRUE;
 WCHAR   wzUniBuf[UNIBUF_SIZE];
 char    szString[SZSTRING_SIZE];
+
+#ifndef IMPL_SRCLINE_ORIGIN_SYMREADER
+size_t pdbDocumentAt = 0;
+size_t pdbPrevDocumentAt = -1;
+size_t pdbPointsAt = 0;
+#endif
 //-----------------------------------
 struct LexScope
 {
@@ -833,6 +848,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
                 GuidToLPSTR(guidLang,zLang);
                 GuidToLPSTR(guidLangVendor,zVendor);
                 GuidToLPSTR(guidDoc,zDoc);
+
                 sprintf_s(szString,SZSTRING_SIZE,"%s%s '%s', '%s', '%s'", g_szAsmCodeIndent,KEYWORD(".language"),
                     zLang,zVendor,zDoc);
                 printLine(pParam->GUICookie,szString);
@@ -865,6 +881,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
+
 BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, mdToken FuncToken, ParamDescriptor* pszArgname, ULONG ulArgs)
 {
     DWORD      PC;
@@ -901,13 +918,17 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
     DWORD                           dwScopeZOrder = 0;
     ISymUnmanagedScope*             pRootScope = NULL;
     ISymUnmanagedMethod*            pSymMethod = NULL;
-    char szFileName[2048];
     ISymUnmanagedDocument*          pMethodDoc[2] = {NULL,NULL};
-    ULONG32                         ulMethodLine[2];
-    ULONG32                         ulMethodCol[2];
     BOOL                            fHasRangeInfo = FALSE;
 
     strcpy_s(szVarPrefix,MAX_PREFIX_SIZE,"V0");
+
+#ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
+
+    char szFileName[2048];
+    ULONG32 ulMethodLine[2];
+    ULONG32 ulMethodCol[2];
+
     if(g_pSymReader)
     {
         g_pSymReader->GetMethod(FuncToken,&pSymMethod);
@@ -1041,6 +1062,11 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             if(pRootScope) pRootScope->Release();
         } //end if (method.LocalVarSigTok)
     } //end if(g_pDebugImport)
+#else
+    fShowSource = g_fShowSource;
+    fInsertSourceLines = g_fInsertSourceLines;
+#endif // #ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
+
     //-------------------------------------------------------------------
     g_tkRefUser = FuncToken;
     DumpLocals(pImport,&method, szVarPrefix, GUICookie);
@@ -1069,7 +1095,6 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
         DWORD   Len;
         DWORD   i,ii;
         OPCODE  instr;
-        char sz[1024];
 
         instr = DecodeOpcode(&pCode[PC], &Len);
         if (instr == CEE_COUNT)
@@ -1092,6 +1117,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             printLine(GUICookie,"");
         }
 
+#ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
+
+        char sz[1024];
+
         if(fShowSource || fInsertSourceLines)
         {
             while(PC == pLCD->PC)
@@ -1100,6 +1129,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if((pLCD->FileToken != ulWasFileToken) || (pLCD->Line < ulWasLine))
                 {
                     WCHAR wzFileName[2048];
+
                     SourceLinesHelper(GUICookie, pLCD, wzFileName, 2048);
                     bIsNewFile = (u16_strcmp(wzFileName,wzWasFileName)!=0);
                     if(bIsNewFile||(pLCD->Line < ulWasLine))
@@ -1170,6 +1200,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 else { fShowSource = FALSE; break; }
             }
         }
+#endif // #ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
+
         if(fTryInCode)
         {
             g_tkRefUser = FuncToken;
@@ -1344,6 +1376,53 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             } while (ptr != 0 && *ptr != 0);
         }
 #endif
+
+#ifndef IMPL_SRCLINE_ORIGIN_SYMREADER
+        if(fInsertSourceLines
+            && pdbDocumentAt < g_portablePdbDebugInfo.size()
+            && g_portablePdbDebugInfo.at(pdbDocumentAt).Points.size() > 0)
+        {
+            const auto p = g_portablePdbDebugInfo.at(pdbDocumentAt).Points.at(pdbPointsAt);
+            if(p.ILOffset == PC)
+            {
+                if(!pdbDocumentAt && !pdbPointsAt)
+                {
+                    GUID guidLang{}, guidLangVendor{}, guidDoc{};
+                    CHAR sLang[GUID_STR_BUFFER_LEN], sVendor[GUID_STR_BUFFER_LEN], sDoc[GUID_STR_BUFFER_LEN];
+
+                    GuidToLPSTR(g_portablePdbDocuments.at(0).lang, sLang);
+                    GuidToLPSTR(CorSym_LanguageVendor_Microsoft, sVendor);
+                    GuidToLPSTR(CorSym_DocumentType_Text, sDoc);
+
+                    sprintf_s
+                    (
+                        szString, SZSTRING_SIZE, "%s%s '%s', '%s', '%s'",
+                        g_szAsmCodeIndent, KEYWORD(".language"),
+                        sLang, sVendor, sDoc
+                    );
+                    printLine(GUICookie, szString);
+                }
+
+                sprintf_s
+                (
+                    szString, SZSTRING_SIZE, "%s%s %d,%d : %d,%d %s",
+                    g_szAsmCodeIndent, KEYWORD(".line"),
+                    p.StartLine, p.EndLine, p.StartColumn, p.EndColumn,
+                    (pdbPointsAt || pdbPrevDocumentAt == p.Document) ? "''"
+                        : ProperName(g_portablePdbDocuments.at(p.Document - 1).name.c_str())
+                );
+                printLine(GUICookie, szString);
+
+                ++pdbPointsAt;
+                pdbPrevDocumentAt = p.Document;
+
+                if(pdbPointsAt >= g_portablePdbDebugInfo.at(pdbDocumentAt).Points.size())
+                {
+                    ++pdbDocumentAt; pdbPointsAt = 0;
+                }
+            }
+        }
+#endif // #ifndef IMPL_SRCLINE_ORIGIN_SYMREADER
 
         szptr = &szString[0];
         szptr+=sprintf_s(szptr,SZSTRING_SIZE,"%sIL_%04x:  ",g_szAsmCodeIndent, PC);
