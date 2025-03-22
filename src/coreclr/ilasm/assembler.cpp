@@ -146,13 +146,13 @@ mdToken Assembler::ResolveClassRef(mdToken tkResScope, _In_ __nullterminated con
             {
                 tkResScope = 0;
             }
-            else if(rt && rt->tkTok == tkResScope && typeRef != TypeRefFilterResult::Deny)
-            {
-                tkResScope = m_pManifest->m_AsmRefLst.PEEK(0)->tkTok;
-            }
             else if(typeRef == TypeRefFilterResult::Link)
             {
                 tkResScope = m_pManifest->GetAsmRefTokByName(rLink.GetUTF8());
+            }
+            else if(rt && rt->tkTok == tkResScope && typeRef != TypeRefFilterResult::Deny)
+            {
+                tkResScope = m_pManifest->m_AsmRefLst.PEEK(0)->tkTok;
             }
         }
 

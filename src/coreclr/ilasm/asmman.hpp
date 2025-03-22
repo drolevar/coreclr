@@ -314,7 +314,7 @@ public:
     void InitRebAssemblies() { if(!m_fInitAsmMscorlib) DefineAsmMscorlib(); }
     void AddAssemblyTypeRefLink(_In_ __nullterminated LPSTR szName, _In_ __nullterminated LPSTR szResolutionScope, BOOL fAny, BOOL fDeny);
     AsmManTypeRefLink* FindTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, std::function<BOOL(AsmManTypeRefLink*)> cb, UINT32* pStartIdx = NULL);
-    LPCSTR GetTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
+    AsmManTypeRefLink* GetTypeRefLinkRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
     TypeRefFilterResult FilterUsingTypeRefLink(_In_ __nullterminated LPCSTR pszFullClassName, _Out_ SString& pLink);
     AsmManTypeRefLink* GetTypeRefDeniedRecord(_In_ __nullterminated LPCSTR pszFullClassName, UINT32* pStartIdx = NULL);
 

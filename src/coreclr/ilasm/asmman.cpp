@@ -288,11 +288,11 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     {
         AddTypeRefLinkToMscorlib("System");
         AddTypeRefLinkToMscorlib("System.", /*fAny*/ TRUE);
-        AddTypeRefLink("System.Span`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
-        AddTypeRefLink("System.ReadOnlySpan`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
-        AddTypeRefLink("System.Memory`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
-        AddTypeRefLink("System.ReadOnlyMemory`", /*szResolutionScope*/ "", /*fAny*/ TRUE);
-        AddTypeRefLink("System.MemoryExtensions", /*szResolutionScope*/ "");
+        AddTypeRefLink("System.Span`", /*szResolutionScope*/ NULL, /*fAny*/ TRUE);
+        AddTypeRefLink("System.ReadOnlySpan`", /*szResolutionScope*/ NULL, /*fAny*/ TRUE);
+        AddTypeRefLink("System.Memory`", /*szResolutionScope*/ NULL, /*fAny*/ TRUE);
+        AddTypeRefLink("System.ReadOnlyMemory`", /*szResolutionScope*/ NULL, /*fAny*/ TRUE);
+        AddTypeRefLink("System.MemoryExtensions");
     }
 }
 // copied from asmparse.y
@@ -854,7 +854,6 @@ void AsmMan::AddAssemblyTypeRefLink
     BOOL fDeny
 )
 {
-    if(!fDeny && !szResolutionScope) szResolutionScope = new char[1]{}; // (... at '') <- (... assert)
     AddTypeRefLinkYacc(szName, szResolutionScope, fAny, fDeny);
 }
 
@@ -904,19 +903,17 @@ AsmManTypeRefLink* AsmMan::FindTypeRefLinkRecord
     return NULL;
 }
 
-LPCSTR AsmMan::GetTypeRefLinkRecord
+AsmManTypeRefLink* AsmMan::GetTypeRefLinkRecord
 (
     _In_ __nullterminated LPCSTR pszFullClassName,
     UINT32* pStartIdx
 )
 {
-    AsmManTypeRefLink* rc = FindTypeRefLinkRecord(pszFullClassName, [](AsmManTypeRefLink* l) -> BOOL
+    return FindTypeRefLinkRecord(pszFullClassName, [](AsmManTypeRefLink* l) -> BOOL
     {
         return !l->m_fDeny;
     },
     pStartIdx);
-
-    return rc ? rc->szResolutionScope : NULL;
 }
 
 TypeRefFilterResult AsmMan::FilterUsingTypeRefLink
@@ -932,10 +929,10 @@ TypeRefFilterResult AsmMan::FilterUsingTypeRefLink
     for(UINT32 i = 0, max = m_pAssembly->m_TypeRefLinkList.COUNT(); i < max; ++i)
     {
         UINT32 current = i;
-        LPCSTR rc = GetTypeRefLinkRecord(pszFullClassName, &i);
+        AsmManTypeRefLink* rc = GetTypeRefLinkRecord(pszFullClassName, &i);
 
-        if(rc != NULL && strlen(rc) == 0) fRet = TypeRefFilterResult::Self;
-        else if(rc != NULL) { refRecord.SetUTF8(rc); fRet = TypeRefFilterResult::Link; }
+        if(rc && !rc->szResolutionScope) { fRet = TypeRefFilterResult::Self; }
+        else if(rc && rc->szResolutionScope) { refRecord.SetUTF8(rc->szResolutionScope); fRet = TypeRefFilterResult::Link; }
         else
         {
             i = current;
