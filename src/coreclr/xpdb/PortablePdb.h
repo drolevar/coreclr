@@ -13,9 +13,12 @@
 #include <bitset>
 #include <array>
 #include <map>
-#include <guiddef.h>
 
-namespace io::github::_3F::coreclr
+#ifndef GUID_DEFINED
+#include <guiddef.h>
+#endif
+
+namespace io::github::_3F::coreclr::pdb::portable
 {
     enum class PortablePdbErrorCode
     {
@@ -127,8 +130,8 @@ namespace io::github::_3F::coreclr
 
         struct DocumentTable
         {
-            std::string name;
-            GUID lang;
+            std::string Name;
+            GUID Lang;
         };
 
         // https://github.com/dotnet/runtime/blob/0d3a4369f5d3/docs/design/specs/PortablePdb-Metadata.md#sequence-point-record
@@ -150,9 +153,15 @@ namespace io::github::_3F::coreclr
             std::vector<SequencePoint> Points;
         };
 
-        void readDocuments(std::vector<DocumentTable>& output);
+        bool isBSJB()
+        {
+            if(!m_pdbHeader || !m_pdbHeader->Magic) readPdbHeader();
+            return m_pdbHeader->Magic == 0x424A5342;
+        }
 
-        void readMethodDebugInfo(std::vector<MethodDebugInfoTable>& output);
+        std::vector<DocumentTable> readDocuments();
+
+        std::vector<MethodDebugInfoTable> readMethodDebugInfo();
 
         PortablePdb(const wchar_t* file)
             : m_heapIdxsWidth(HeapIdx2B)
@@ -161,8 +170,6 @@ namespace io::github::_3F::coreclr
             if(!pdbf) throw PortablePdbException{ PortablePdbErrorCode::FailedReadFile };
 
             std::copy(std::istreambuf_iterator<char>{ pdbf }, std::istreambuf_iterator<char>{}, std::back_inserter(m_data));
-
-            parseStreams();
         }
 
         ~PortablePdb() = default;
@@ -176,6 +183,16 @@ namespace io::github::_3F::coreclr
             uint32_t records;
             const uint8_t* endRecords;
         };
+
+        void readPdbHeader()
+        {
+            m_pdbHeader = reinterpret_cast<const PortablePdbHeader*>(m_data.data());
+        }
+
+        void parseStreamsIfNeed()
+        {
+            if(m_locStreams.empty()) parseStreams();
+        }
 
         const uint8_t* initBlob(uint32_t offset, BlobData& blob)
         {
@@ -215,6 +232,8 @@ namespace io::github::_3F::coreclr
         }
 
     private:
+
+        const PortablePdbHeader* m_pdbHeader = { 0 };
 
         //Document Table Columns: Name; HashAlgorithm; Hash; Language
         static constexpr size_t _DocTableColSize = 4;

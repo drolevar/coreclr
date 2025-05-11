@@ -26,7 +26,6 @@
 #include <clrversion.h>
 #include <_version.h>
 
-#include <PortablePdb.h>
 #include <filesystem>
 
 // Disable the "initialization of static local vars is no thread safe" error
@@ -42,7 +41,7 @@ DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 
 #include "mdfileformat.h"
 
-#include <PortablePdb.h>
+#include <XPdb.h>
 using namespace io::github::_3F::coreclr;
 
 struct MIDescriptor
@@ -146,8 +145,8 @@ unsigned                g_uCodePage = g_uConsoleCP;
 char*                   g_rchCA = NULL; // dyn.allocated array of CA dumped/not flags
 unsigned                g_uNCA = 0;     // num. of CAs
 
-std::vector<PortablePdb::DocumentTable> g_portablePdbDocuments{};
-std::vector<PortablePdb::MethodDebugInfoTable> g_portablePdbDebugInfo{};
+std::vector<XPdb::DocumentInfo> g_xPdbDocuments{};
+std::vector<XPdb::MethodDebugInfo> g_xPdbDebugInfo{};
 
 struct ResourceNode;
 extern DynamicArray<LocalComTypeDescr*> *g_pLocalComType;
@@ -7558,20 +7557,30 @@ BOOL DumpFile()
 
         try
         {
-            PortablePdb pdb(filePdb);
-
-            pdb.readDocuments(g_portablePdbDocuments);
-            pdb.readMethodDebugInfo(g_portablePdbDebugInfo);
+            XPdb::parse(filePdb, g_xPdbDebugInfo, g_xPdbDocuments);
         }
-        catch(const PortablePdbException& ex)
+        catch(const pdb::portable::PortablePdbException& ex)
         {
-            switch (ex.code)
+            sprintf_s(szString, SZSTRING_SIZE, "WARNING: PortablePdb %d at \"%ls\" ", (int)ex.code, filePdb);
+            std::string msg(szString);
+
+            switch(ex.code)
             {
-            case PortablePdbErrorCode::InvalidPdbFormat:
-                ::printf("WARNING: Only Portable PDB format is supported at the moment. Try converting or contact https://github.com/3F/coreclr\n");
+            case pdb::portable::PortablePdbErrorCode::InvalidPdbFormat:
+                msg.append("Try converting to Native Pdb or contact https://github.com/3F/coreclr");
                 break;
             }
-            ::printf("WARNING: PortablePdbErrorCode %d at %ls\n", (int)ex.code, filePdb);
+            msg.append("\n");
+
+            ::printf(msg.c_str());
+        }
+        catch(const pdb::native::NativePdbException& ex)
+        {
+            ::printf("WARNING: NativePdb %d at \"%ls\" ", (int)ex.code, filePdb);
+        }
+        catch(const std::exception& ex) // llvm's execptions etc.
+        {
+            ::printf("WARNING: Pdb error: %s at \"%ls\" ", ex.what(), filePdb);
         }
     }
 

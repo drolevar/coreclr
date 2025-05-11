@@ -3,15 +3,17 @@
 //
 #include "PortablePdb.h"
 
-using namespace io::github::_3F::coreclr;
+using namespace io::github::_3F::coreclr::pdb::portable;
 
-void PortablePdb::readDocuments(std::vector<DocumentTable>& output)
+std::vector<PortablePdb::DocumentTable> PortablePdb::readDocuments()
 {
+    parseStreamsIfNeed();
     const uint8_t* curr = m_posAtDocumentTable;
 
     // Document Table: 0x30 https://github.com/dotnet/runtime/blob/6e335aa872bf1/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#document-table-0x30
     std::array<uint32_t, _DocTableColSize> cols{};
 
+    std::vector<DocumentTable> ret;
     for(size_t row = 0; row < m_rowsAtDocument; ++row)
     {
         for(size_t col = 0; col < _DocTableColSize; ++col)
@@ -26,17 +28,20 @@ void PortablePdb::readDocuments(std::vector<DocumentTable>& output)
 
         const GUID* lang = startGuid + cols[3] - 1; //Column: Language; -1-based index to #Guid heap offset
 
-        output.push_back({ name, *lang });
+        ret.push_back({ name, *lang });
     }
+    return ret;
 }
 
-void PortablePdb::readMethodDebugInfo(std::vector<MethodDebugInfoTable>& output)
+std::vector<PortablePdb::MethodDebugInfoTable> PortablePdb::readMethodDebugInfo()
 {
+    parseStreamsIfNeed();
     const uint8_t* curr = m_posAtMethodDebugInfo;
 
     // MethodDebugInformation Table: 0x31 https://github.com/dotnet/runtime/blob/6e335aa872bf/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31
     // MethodDebugInfo Table logically extends MethodDef table. +Columns: Document; SequencePoints
 
+    std::vector<MethodDebugInfoTable> ret;
     for(size_t row = 0; row < m_rowsAtMethodDebugInfo; ++row)
     {
         uint32_t docId = readNextColumn(m_rowsAtDocument < USHRT_MAX ? HeapIdx2B : HeapIdx4B, curr);
@@ -44,7 +49,7 @@ void PortablePdb::readMethodDebugInfo(std::vector<MethodDebugInfoTable>& output)
 
         if(seqId == 0)
         {
-            output.push_back({ docId });
+            ret.push_back({ docId });
             continue;
         }
 
@@ -52,20 +57,17 @@ void PortablePdb::readMethodDebugInfo(std::vector<MethodDebugInfoTable>& output)
         mdi.InitialDocument = docId;
 
         readSequencePointsFromBlob(seqId, mdi);
-        output.push_back(std::move(mdi));
+        ret.push_back(std::move(mdi));
     }
+    return ret;
 }
 
 void PortablePdb::parseStreams()
 {
-    auto header = reinterpret_cast<const PortablePdbHeader*>(m_data.data());
-    if(header->Magic != 0x424A5342)
-    {
-        throw PortablePdbException{ PortablePdbErrorCode::InvalidPdbFormat };
-    }
+    if(!isBSJB()) throw PortablePdbException{ PortablePdbErrorCode::InvalidPdbFormat };
 
     const uint8_t* curr = m_data.data() + sizeof(PortablePdbHeader);
-    curr += header->Length + sizeof(PortablePdbStreams::Flags);
+    curr += m_pdbHeader->Length + sizeof(PortablePdbStreams::Flags);
     auto streams = *reinterpret_cast<const uint16_t*>(curr);
 
     curr += sizeof(PortablePdbStreams::Streams);

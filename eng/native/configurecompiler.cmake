@@ -65,6 +65,11 @@ if (MSVC)
   define_property(TARGET PROPERTY CLR_EH_OPTION INHERITED BRIEF_DOCS "Defines the value of the /EH option" FULL_DOCS "Set this property to one of the valid /EHxx options (/EHa, /EHsc, /EHa-, ...)")
   define_property(TARGET PROPERTY MSVC_WARNING_LEVEL INHERITED BRIEF_DOCS "Define the warning level for the /Wn option" FULL_DOCS "Set this property to one of the valid /Wn options (/W0, /W1, /W2, /W3, /W4)")
 
+  define_property(TARGET PROPERTY MSVC_WARNINGS_AS_ERRORS INHERITED BRIEF_DOCS "Treat warnings as errors" FULL_DOCS "Set this property to ON or OFF")
+  define_property(TARGET PROPERTY MSVC_C_CXX_WE42XX INHERITED BRIEF_DOCS "Treat possible data loss during conversions as an error" FULL_DOCS "Set this property to ON or OFF")
+
+  set_property(GLOBAL PROPERTY MSVC_C_CXX_WE42XX ON)
+
   set_property(GLOBAL PROPERTY CLR_CONTROL_FLOW_GUARD ON)
 
   # Remove the /EHsc from the CXX flags so that the compile options are the only source of truth for that
@@ -787,7 +792,10 @@ if (MSVC)
   # set default warning level to 4 but allow targets to override it.
   set_property(GLOBAL PROPERTY MSVC_WARNING_LEVEL 4)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
+
+  set_property(GLOBAL PROPERTY MSVC_WARNINGS_AS_ERRORS ON)
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<BOOL:$<TARGET_PROPERTY:MSVC_WARNINGS_AS_ERRORS>>>:/WX>)
+
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oy->) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gm->) # disable minimal rebuild
@@ -852,9 +860,16 @@ if (MSVC)
   # (Access to that URL restricted to Microsoft employees.)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4055>) # 'conversion' : from data pointer 'type1' to function pointer 'type2'
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4146>) # unary minus operator applied to unsigned type, result still unsigned
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4242>) # 'identifier' : conversion from 'type1' to 'type2', possible loss of data
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4244>) # 'conversion' conversion from 'type1' to 'type2', possible loss of data
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4267>) # 'var' : conversion from 'size_t' to 'type', possible loss of data
+
+  # 'identifier' : conversion from 'type1' to 'type2', possible loss of data
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<BOOL:$<TARGET_PROPERTY:MSVC_C_CXX_WE42XX>>>:/we4242>)
+
+  # 'conversion' conversion from 'type1' to 'type2', possible loss of data
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<BOOL:$<TARGET_PROPERTY:MSVC_C_CXX_WE42XX>>>:/we4244>)
+
+  # 'var' : conversion from 'size_t' to 'type', possible loss of data
+  add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<BOOL:$<TARGET_PROPERTY:MSVC_C_CXX_WE42XX>>>:/we4267>)
+
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4302>) # 'conversion' : truncation from 'type 1' to 'type 2'
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4308>) # negative integral constant converted to unsigned type
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4509>) # nonstandard extension used: 'function' uses SEH and 'object' has destructor

@@ -20,7 +20,7 @@
 extern PELoader * g_pPELoader;
 #include <corsym.h>
 
-#include <PortablePdb.h>
+#include <XPdb.h>
 using namespace io::github::_3F::coreclr;
 
 #ifdef IMPL_SRCLINE_ORIGIN_SYMREADER
@@ -42,8 +42,8 @@ static BOOL ConvToLiteral(__inout __nullterminated char* retBuff, const WCHAR* s
 extern DWORD                   g_Mode;
 extern unsigned g_uConsoleCP;
 
-extern std::vector<PortablePdb::DocumentTable> g_portablePdbDocuments;
-extern std::vector<PortablePdb::MethodDebugInfoTable> g_portablePdbDebugInfo;
+extern std::vector<XPdb::DocumentInfo> g_xPdbDocuments;
+extern std::vector<XPdb::MethodDebugInfo> g_xPdbDebugInfo;
 
 #define PADDING 28
 
@@ -1379,10 +1379,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
 #ifndef IMPL_SRCLINE_ORIGIN_SYMREADER
         if(fInsertSourceLines
-            && pdbDocumentAt < g_portablePdbDebugInfo.size()
-            && g_portablePdbDebugInfo.at(pdbDocumentAt).Points.size() > 0)
+            && pdbDocumentAt < g_xPdbDebugInfo.size()
+            && g_xPdbDebugInfo.at(pdbDocumentAt).Points.size() > 0)
         {
-            const auto p = g_portablePdbDebugInfo.at(pdbDocumentAt).Points.at(pdbPointsAt);
+            const auto p = g_xPdbDebugInfo.at(pdbDocumentAt).Points.at(pdbPointsAt);
             if(p.ILOffset == PC)
             {
                 if(!pdbDocumentAt && !pdbPointsAt)
@@ -1390,7 +1390,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     GUID guidLang{}, guidLangVendor{}, guidDoc{};
                     CHAR sLang[GUID_STR_BUFFER_LEN], sVendor[GUID_STR_BUFFER_LEN], sDoc[GUID_STR_BUFFER_LEN];
 
-                    GuidToLPSTR(g_portablePdbDocuments.at(0).lang, sLang);
+                    GuidToLPSTR(g_xPdbDocuments.at(0).Lang, sLang);
                     GuidToLPSTR(CorSym_LanguageVendor_Microsoft, sVendor);
                     GuidToLPSTR(CorSym_DocumentType_Text, sDoc);
 
@@ -1409,14 +1409,14 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     g_szAsmCodeIndent, KEYWORD(".line"),
                     p.StartLine, p.EndLine, p.StartColumn, p.EndColumn,
                     (pdbPointsAt || pdbPrevDocumentAt == p.Document) ? "''"
-                        : ProperName(g_portablePdbDocuments.at(p.Document - 1).name.c_str())
+                        : ProperName(g_xPdbDocuments.at(p.Document - 1).Name.c_str())
                 );
                 printLine(GUICookie, szString);
 
                 ++pdbPointsAt;
                 pdbPrevDocumentAt = p.Document;
 
-                if(pdbPointsAt >= g_portablePdbDebugInfo.at(pdbDocumentAt).Points.size())
+                if(pdbPointsAt >= g_xPdbDebugInfo.at(pdbDocumentAt).Points.size())
                 {
                     ++pdbDocumentAt; pdbPointsAt = 0;
                 }

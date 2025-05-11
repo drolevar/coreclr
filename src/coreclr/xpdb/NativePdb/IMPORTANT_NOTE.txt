@@ -1,0 +1,8 @@
+This is modified (stripped-down) version of original LLVM implementation.
+
+This was specially prepared for https://github.com/3F/coreclr
+Copyright (c) 2025  Denis Kuzmin <x-3F@outlook.com> github/3F
+
+If you are looking for a complete implementation: https://github.com/llvm/llvm-project
+
+More about: https://github.com/3F/coreclr/issues/3#issuecomment-2845660889
