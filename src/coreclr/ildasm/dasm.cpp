@@ -7552,12 +7552,13 @@ BOOL DumpFile()
 
     if(g_fInsertSourceLines)
     {
+        std::filesystem::path _pathToModule(g_wszFullInputFile);
+        const wchar_t* filePdb = _pathToModule.replace_extension(L".pdb").c_str();
+        ::printf("Extract information from PDB: %ls\n", filePdb);
+
         try
         {
-            std::filesystem::path _pathToModule(g_wszFullInputFile);
-            const wchar_t* file = _pathToModule.replace_extension(L".pdb").c_str();
-            ::printf("Extract data from PDB: %ls\n", file);
-            PortablePdb pdb(file);
+            PortablePdb pdb(filePdb);
 
             pdb.readDocuments(g_portablePdbDocuments);
             pdb.readMethodDebugInfo(g_portablePdbDebugInfo);
@@ -7567,16 +7568,16 @@ BOOL DumpFile()
             switch (ex.code)
             {
             case PortablePdbErrorCode::InvalidPdbFormat:
-                ::printf("[*] Only Portable PDB format is supported at the moment. Contact https://github.com/3F/coreclr\n");
+                ::printf("WARNING: Only Portable PDB format is supported at the moment. Try converting or contact https://github.com/3F/coreclr\n");
                 break;
             }
-            ::printf("PortablePdbException: %d\n", (int)ex.code);
+            ::printf("WARNING: PortablePdbErrorCode %d at %ls\n", (int)ex.code, filePdb);
         }
     }
 
     if(g_fShowSource)
     {
-        ::printf("[*] /SOURCE key is not yet supported in the current implementation. Contact https://github.com/3F/coreclr\n");
+        ::printf("WARNING: /SOURCE key is not yet supported in the current implementation. Contact https://github.com/3F/coreclr\n");
     }
 
 #endif // #ifndef IMPL_SRCLINE_ORIGIN_SYMREADER

@@ -169,7 +169,7 @@ bool PortablePdb::readSequencePointsFromBlob(uint32_t offset, MethodDebugInfoTab
 
     static constexpr uint32_t _Hidden = 0xfeefee; // Hidden sequence point
 
-    SequencePoint* lastUnhidden = nullptr;
+    size_t lastUnhidden = -1;
     while(curr < blob.endRecords)
     {
         SequencePoint p{};
@@ -196,36 +196,38 @@ bool PortablePdb::readSequencePointsFromBlob(uint32_t offset, MethodDebugInfoTab
         if(p.EndLine == 0 && p.EndColumn == 0)
         {
             p.StartLine = p.EndLine = _Hidden;
-            mdi.Points.push_back(p);
+            mdi.Points.push_back(std::move(p));
             continue;
         }
 
-        if(lastUnhidden == nullptr)
+        if(lastUnhidden == -1)
         {
             p.StartLine = decompressUInt32(curr);
             p.StartColumn = decompressUInt32(curr);
         }
         else
         {
-            p.StartLine = lastUnhidden->StartLine + decompressInt32(curr);
-            p.StartColumn = lastUnhidden->StartColumn + decompressInt32(curr);
+            const auto& prev = mdi.Points.at(lastUnhidden);
+            p.StartLine = prev.StartLine + decompressInt32(curr);
+            p.StartColumn = prev.StartColumn + decompressInt32(curr);
         }
-        _failIf(p.StartLine == _Hidden || p.StartLine > 0x20000000, PortablePdbErrorCode::InvalidStartLine);
+        _failIf(p.StartLine > 0x20000000, PortablePdbErrorCode::InvalidStartLine);
 
         p.EndLine += p.StartLine;
-        _failIf(p.EndLine == _Hidden || p.EndLine > 0x20000000, PortablePdbErrorCode::InvalidEndLine);
+        _failIf(p.EndLine > 0x20000000, PortablePdbErrorCode::InvalidEndLine);
         _failIf(p.EndLine < p.StartLine, PortablePdbErrorCode::InvalidLines);
 
         p.EndColumn += p.StartColumn;
         _failIf(p.StartColumn > 0x10000 || p.EndColumn > 0x10000);
 
-        if(p.StartLine == p.EndLine)
+        if(p.StartLine == p.EndLine && p.StartLine != _Hidden)
         {
             _failIf(p.EndColumn < p.StartColumn, PortablePdbErrorCode::InvalidColumns);
         }
 
+        if(p.StartLine != _Hidden) lastUnhidden = mdi.Points.size();
+
         mdi.Points.push_back(std::move(p));
-        lastUnhidden = &mdi.Points.back();
     }
     return true;
 }
