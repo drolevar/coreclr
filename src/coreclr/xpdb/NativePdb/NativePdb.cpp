@@ -34,9 +34,14 @@ std::vector<NativePdb::MethodDebugInfo> NativePdb::readMethodDebugInfo()
     Expected<DbiStream&> dbiS = pdb.getPDBDbiStream();
     if(!dbiS) throw NativePdbException{ NativePdbErrorCode::FailedDbiStream };
 
+    const DbiModuleList& modules = (*dbiS).modules();
+
     std::vector<MethodDebugInfo> ret;
-    for(uint32_t idx = 0, max = (*dbiS).modules().getModuleCount(); idx < max; ++idx)
+    for(uint32_t idx = 0, max = modules.getModuleCount(); idx < max; ++idx)
     {
+        const DbiModuleDescriptor& desc = modules.getModuleDescriptor(idx);
+        if(desc.getSymbolDebugInfoByteSize() < 1) continue;
+
         Expected<ModuleDebugStreamRef> dbgS = m_pdbSession->getModuleDebugStream(idx);
         if(!dbgS) throw NativePdbException{ NativePdbErrorCode::FailedDebugStream };
 
