@@ -121,7 +121,7 @@ ilasm ... /CVR=cvtres.exe
 
 Automatic search is available starting from 9.3.0+ by using [hMSBuild](https://github.com/3F/hMSBuild) and other predefined falbacks to resolve *.res* / *.obj* processing automatically.
 
-#### `.line` with support for both PDB types (MSF + Portable)
+#### `.line` with support for both PDB types (MSF + Portable(BSJB))
 
 [Read more about](https://github.com/3F/coreclr/issues/3)
 
