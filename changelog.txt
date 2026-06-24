@@ -1,6 +1,10 @@
 3F's IL Assembler / coreclr - https://github.com/3F/coreclr
 - - - - - - - - - - - - - - - 
 
+[9.4.1] 2026.06.24
+
+    * Ignore -TEXT switch like -NOBAR.
+
 [9.4.0] 2025.06.06
 
     * NEW: Native PDB (MSF) support in disassembler.

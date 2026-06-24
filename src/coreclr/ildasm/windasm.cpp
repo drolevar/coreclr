@@ -197,6 +197,11 @@ int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileNam
             // Eliminates the difference between other ILDasm versions
             // where '/NOBAR - Suppress disassembly progress bar window pop-up.'
         }
+        else if (_stricmp(szOpt, "tex") == 0)
+        {
+            // Eliminates the difference between other ILDasm versions
+            // where '/TEXT - Direct output to console window rather than to GUI.'
+        }
         else if (_stricmp(szOpt, "noc") == 0)
         {
             g_fShowCA = FALSE;
